@@ -76,81 +76,189 @@ app.get('/post_authentication', (req, res) => {
   }
 });
 
-app.post('/getPlayListInformation', (req,res) => {
-    try {
-        playlistId = req.body.playlistId
-        if (client_access_token.size > 0) {
-            console.log(client_access_token[0]);
-            access_token = client_access_token[0];
-            var authOptions = {
-                url: 'https://api.spotify.com/v1/playlists/' + playlistId,
-                headers: { Authorization: 'Bearer ' + access_token },
-            };
-            request.get(authOptions, (error, response, body) => {
-                console.log(response.body);
-                res.json({
-                    results: response.body,
-                });
-            });
-         } else {
-            console.log(constant_access_token);
-            access_token = constant_access_token;
-            console.log(access_token);
-            var authOptions = {
-                url: 'https://api.spotify.com/v1/playlists/' + playlistId,
-                headers: { Authorization: 'Bearer ' + access_token },
-            };
-            request.get(authOptions, (error, response, body) => {
-                console.log(response.body);
-                res.json({
-                    results: response.body,
-                });
-            });
-        }
-    }
-    catch(e) {
-        console.log("There was an error getting PlaylistInformation: " + e);
-    }
-})
+//https://api.spotify.com/v1/me/following?type=artist
 
-app.post('/searchForPlaylists', (req, res) => {
-  try {
-    searchParams = req.body.searchParams;
-    searchParams.replace(' ', '%20');
-    console.log('Client access token');
-    if (client_access_token.size > 0) {
-      console.log(client_access_token[0]);
-      access_token = client_access_token[0];
-      var authOptions = {
-        url: 'https://api.spotify.com/v1/search?q=' + searchParams + '&type=playlist',
-        headers: { Authorization: 'Bearer ' + access_token },
-      };
-      request.get(authOptions, (error, response, body) => {
-        console.log(response.body);
-        res.json({
-          results: response.body,
-        });
-      });
+app.get('/api/myprofile/following', (req, res) => {
+  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
+  var authOptions = {
+    url: 'https://api.spotify.com/v1/me/following?type=artist',
+    headers: { Authorization: 'Bearer ' + access_token },
+  };
+  request.get(authOptions, (error, response, body) => {
+    if (error) {
+      console.log(error);
     } else {
-      console.log(constant_access_token);
-      access_token = constant_access_token;
-      console.log(access_token);
-      var authOptions = {
-        url: 'https://api.spotify.com/v1/search?q=' + searchParams + '&type=playlist',
-        headers: { Authorization: 'Bearer ' + access_token },
-      };
-      request.get(authOptions, (error, response, body) => {
-        console.log(response.body);
-        res.json({
-          results: response.body,
-        });
+      res.json({
+        results: response.body,
       });
     }
-  } catch (e) {
-    console.log('there is an error searching');
-    console.log(e);
-  }
+  });
 });
+
+app.get('/api/myprofile', (req, res) => {
+  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
+  var authOptions = {
+    url: 'https://api.spotify.com/v1/me/',
+    headers: { Authorization: 'Bearer ' + access_token },
+  };
+  request.get(authOptions, (error, response, body) => {
+    if (error) {
+      console.log(error);
+    } else {
+      res.json({
+        results: response.body,
+      });
+    }
+  });
+});
+
+app.get('/api/profile/:profileId', (req, res) => {
+  let profileId = req.params['profileId'];
+  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
+  var authOptions = {
+    url: 'https://api.spotify.com/v1/users/' + profileId,
+    headers: { Authorization: 'Bearer ' + access_token },
+  };
+  request.get(authOptions, (error, response, body) => {
+    if (error) {
+      console.log(error);
+    } else {
+      res.json({
+        results: response.body,
+      });
+    }
+  });
+});
+
+app.get('/api/profile/:profileId/playlists', (req, res) => {
+  let profileId = req.params['profileId'];
+  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
+  var authOptions = {
+    url: 'https://api.spotify.com/v1/users/' + profileId + '/playlists',
+    headers: { Authorization: 'Bearer ' + access_token },
+  };
+  request.get(authOptions, (error, response, body) => {
+    if (error) {
+      console.log(error);
+    } else {
+      res.json({
+        results: response.body,
+      });
+    }
+  });
+});
+
+app.get('/api/playlist/:playlistId/details', (req, res) => {
+  let playlistId = req.params['playlistId'];
+  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
+  var authOptions = {
+    url: 'https://api.spotify.com/v1/playlists/' + playlistId,
+    headers: { Authorization: 'Bearer ' + access_token },
+  };
+  request.get(authOptions, (error, response, body) => {
+    if (error) {
+      console.log(error);
+    } else {
+      res.json({
+        results: response.body,
+      });
+    }
+  });
+});
+
+// app.post('/getPlayListInformation', (req, res) => {
+//   try {
+//     playlistId = req.body.playlistId;
+//     if (client_access_token.size > 0) {
+//       console.log(client_access_token[0]);
+//       access_token = client_access_token[0];
+//       var authOptions = {
+//         url: 'https://api.spotify.com/v1/playlists/' + playlistId,
+//         headers: { Authorization: 'Bearer ' + access_token },
+//       };
+//       request.get(authOptions, (error, response, body) => {
+//         console.log(response.body);
+//         res.json({
+//           results: response.body,
+//         });
+//       });
+//     } else {
+//       console.log(constant_access_token);
+//       access_token = constant_access_token;
+//       console.log(access_token);
+//       var authOptions = {
+//         url: 'https://api.spotify.com/v1/playlists/' + playlistId,
+//         headers: { Authorization: 'Bearer ' + access_token },
+//       };
+//       request.get(authOptions, (error, response, body) => {
+//         console.log(response.body);
+//         res.json({
+//           results: response.body,
+//         });
+//       });
+//     }
+//   } catch (e) {
+//     console.log('There was an error getting PlaylistInformation: ' + e);
+//   }
+// });
+
+app.get('/api/playlists/:query', (req, res) => {
+  let query = req.params['query'];
+  query.replace(' ', '%20');
+  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
+  var authOptions = {
+    url: 'https://api.spotify.com/v1/search?q=' + query + '&type=playlist',
+    headers: { Authorization: 'Bearer ' + access_token },
+  };
+  request.get(authOptions, (error, response, body) => {
+    if (error) {
+      console.log(error);
+    } else {
+      res.json({
+        results: response.body,
+      });
+    }
+  });
+});
+
+// app.post('/searchForPlaylists', (req, res) => {
+//   try {
+//     searchParams = req.body.searchParams;
+//     searchParams.replace(' ', '%20');
+//     console.log('Client access token');
+//     if (client_access_token.size > 0) {
+//       console.log(client_access_token[0]);
+//       access_token = client_access_token[0];
+//       var authOptions = {
+//         url: 'https://api.spotify.com/v1/search?q=' + searchParams + '&type=playlist',
+//         headers: { Authorization: 'Bearer ' + access_token },
+//       };
+//       request.get(authOptions, (error, response, body) => {
+//         console.log(response.body);
+//         res.json({
+//           results: response.body,
+//         });
+//       });
+//     } else {
+//       console.log(constant_access_token);
+//       access_token = constant_access_token;
+//       console.log(access_token);
+//       var authOptions = {
+//         url: 'https://api.spotify.com/v1/search?q=' + searchParams + '&type=playlist',
+//         headers: { Authorization: 'Bearer ' + access_token },
+//       };
+//       request.get(authOptions, (error, response, body) => {
+//         console.log(response.body);
+//         res.json({
+//           results: response.body,
+//         });
+//       });
+//     }
+//   } catch (e) {
+//     console.log('there is an error searching');
+//     console.log(e);
+//   }
+// });
 
 function refresh_access_spotify() {
   var authOptions = {
