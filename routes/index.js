@@ -9,8 +9,13 @@ var app = express();
 app.use(cors());
 app.use(body_parser.json());
 
-var serverUrl = 'http://localhost:8080/';
-var clientUrl = 'http://localhost:3000/';
+//For test server
+// var serverUrl = 'http://localhost:8080/';
+// var clientUrl = 'http://localhost:3000/';
+
+//For deployment
+var serverUrl = 'https://wbdv-f20-music-server-spotify.herokuapp.com/';
+var clientUrl = 'https://wbdv-f20-music.herokuapp.com/';
 
 var client_id = '64a311df55f24059a326323c754eedfd';
 var client_Secret = '71ed2c4226d746488ca2afd497128671';
