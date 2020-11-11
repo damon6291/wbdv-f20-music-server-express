@@ -19,7 +19,7 @@ var clientUrl = 'https://wbdv-f20-music.herokuapp.com/';
 
 var client_id = '64a311df55f24059a326323c754eedfd';
 var client_Secret = '71ed2c4226d746488ca2afd497128671';
-var redirect_uri = serverUrl + 'post_authentication';
+var redirect_uri = 'http://wbdv-f20-music-server-spotify.herokuapp.com/post_authentication';
 var client_auth_code = [];
 var client_access_token = [];
 var client_refresh_token = [];
