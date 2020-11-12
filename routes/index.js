@@ -18,14 +18,14 @@ var serverUrl = 'https://wbdv-f20-music-server-spotify.herokuapp.com/';
 var clientUrl = 'https://wbdv-f20-music.herokuapp.com/';
 
 //Hussein
-var client_id = '64a311df55f24059a326323c754eedfd';
-var client_Secret = '71ed2c4226d746488ca2afd497128671';
+// var client_id = '64a311df55f24059a326323c754eedfd';
+// var client_Secret = '71ed2c4226d746488ca2afd497128671';
 
 //Damon
 var client_id = '33f50a3d11604feda7d71a1676962fd4';
 var client_Secret = 'f668a134308b44bb83e1e6f051ef6a8a';
 
-var redirect_uri = 'http://wbdv-f20-music-server-spotify.herokuapp.com/post_authentication';
+var redirect_uri = `${serverUrl}post_authentication`;
 var client_auth_code = [];
 var client_access_token = [];
 var client_refresh_token = [];
