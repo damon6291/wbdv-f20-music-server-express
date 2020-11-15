@@ -9,21 +9,239 @@ var app = express();
 app.use(cors());
 app.use(body_parser.json());
 
+const {MongoClient} = require('mongodb');
+const uri = 'mongodb+srv://Hussein1324:Hussein1324@users.xnopa.mongodb.net/Users?retryWrites=true&w=majority'
+const client = new MongoClient(uri);
+//newListing is the document to insert
+async function createUser(client, newListing) {
+    await client.connnect();
+    await client.db('Users').collection("Login").insertOne(newListing);
+};
+
+async function retrieveUsers(client) {
+    await client.connect();
+    const result = await client.db('Users').collection("Login").find({}).toArray();
+    return result;
+}
+
+async function retrieveAllPosts(clients) {
+    await client.connect();
+    const result = await client.db('Users').collection("Posts").find({}).toArray();
+    return result;
+}
+
+async function updatePost(client, id, updatedListing) {
+    var myquery = { id: id };
+    var newvalues = { $set: updatedListing };
+    await client.connect();
+    await client.db('Users').collection("Posts").updateOne(myquery, newvalues, function(err, res) {
+        if (err) throw err;
+        console.log("1 document updated");
+        db.close();
+    });
+}
+
+async function createPost (client, newListing) {
+    await client.connnect();
+    await client.db('Users').collection("Posts").insertOne(newListing);
+};
+
+async function deletePost(client, id) {
+    await client.connect();
+    await client.db('Users').collection("Posts").deleteOne({_id:new mongodb.ObjectID(id)});
+}
+
+
+app.post('/registerUser', (req, res) =>  {
+    username = req.body.username
+    password = req.body.password
+//    username = "hussein213213"
+//    password = "123123123"
+
+    async function getAllUsers() {
+            error = false;
+            arr = await retrieveUsers(client);
+            for(i = 0; i < arr.length; i ++) {
+                if (username == arr[i].username) {
+                    error = true;
+                    break;
+                }
+            }
+            if (error) {
+                res.json({
+                    message: "UserName: " + username + " already taken. Please choose a new name."
+                })
+            }
+            else {
+                try {
+                    await createUser(client, {username, password});
+                    console.log("user created successfully");
+                    res.json({
+                        message: "Success"
+                    })
+                }
+                catch(e) {
+                    console.log(e);
+                    res.json({
+                        message: "We're Sorry, there was an issue creating your account. Try again later!"
+                    })
+                }
+            }
+    }
+    getAllUsers();
+});
+
+app.post('/loginUser', (req, res) => {
+        username = req.body.username
+        password = req.body.password
+//        username = "hussein213213"
+//        password = "123123123"
+
+        async function getAllUsers() {
+                arr = await retrieveAllSaved(client);
+                for(i = 0; i < arr.length; i ++) {
+                    if (username == arr[i].username) {
+                        if(password == arr[i].password) {
+                            success = true;
+                            break;
+                        }
+                    }
+                }
+                if (!success) {
+                    res.json({
+                        message: "UserName: " + username + " not found or password is incorrect"
+                    })
+                }
+                else {
+                    res.json({
+                        message: "Success"
+                    })
+                }
+        }
+        getAllUsers();
+});
+
+app.post('/createPost', (req, res) => {
+    username = req.body.post_username
+    post_heading = req.body.post_username
+    post_paragraph = req.body.post_paragraph
+    post_link = req.body.post_link
+    post_time = new Date()
+    post_likes = 0;
+
+//    username = "hussein213213"
+//    post_heading = "yuh"
+//    post_paragraph = "this is a tessssst"
+//    post_link = "link test. You would put the link to the playlist here"
+//    post_time = new Date()
+    async function makePost() {
+        try {
+            await createPost(client, {username, heading: post_heading, body: post_paragraph, src: post_link, time: post_time, likes: post_likes});
+            res.json({
+                message: "Success"
+            })
+        }
+        catch(e) {
+            res.json({
+                message: "There was an error creating your post. Please retry"
+            })
+        }
+    }
+    makePost();
+})
+
+app.post('/getAllPosts', (req, res) => {
+    async function getPosts() {
+        try {
+            arr = await retrieveAllPosts(client);
+            res.json({
+                results: arr
+            })
+        }
+        catch (e) {
+            console.log(e);
+            res.json({
+                message: "There was an error retrieving posts"
+            })
+        }
+    }
+    getPosts();
+});
+
+app.get('/likedPost', (req, res) => {
+    post_id = req.body.post_id
+    post_likes = req.body.prev_post_likes + 1
+
+    async function updatedLike() {
+        try {
+            await updatePost(client, post_id, {post_likes: post_likes})
+            res.json({
+                message: "Success"
+            })
+        }
+        catch(e) {
+            res.json({
+                message: "There was an error updating the likes to this post "
+            })
+        }
+    }
+    updatedLike();
+
+})
+
+app.post('/updatePost', (req, res) => {
+    post_id = req.body.post_id
+    updated_post = req.body.updated_post
+    async function updatePosts() {
+        try {
+            await updatePost(client, post_id, updated_post)
+            res.json({
+                message: "Success"
+            })
+        }
+        catch (e) {
+            console.log(e)
+            res.json({
+                message: "There was an error updating Post. Please try again later"
+            })
+        }
+    }
+    updatePost();
+})
+
+app.post('/deletePost', (req, res) => {
+    post_id = req.body.post_id
+    async function deletePosts() {
+        try {
+            await deletePost(client, post_id);
+            res.json({
+                message: "Success"
+            })
+        }
+        catch (e) {
+            res.json({
+                message: "Cannot Delete Post. Please try again later"
+            })
+        }
+    }
+    deletePosts();
+})
+
 //For test server
-// var serverUrl = 'http://localhost:8080/';
-// var clientUrl = 'http://localhost:3000/';
+ var serverUrl = 'http://localhost:8080/';
+ var clientUrl = 'http://localhost:3000/';
 
 //For deployment
-var serverUrl = 'https://wbdv-f20-music-server-spotify.herokuapp.com/';
-var clientUrl = 'https://wbdv-f20-music.herokuapp.com/';
+//var serverUrl = 'https://wbdv-f20-music-server-spotify.herokuapp.com/';
+//var clientUrl = 'https://wbdv-f20-music.herokuapp.com/';
 
 //Hussein
-// var client_id = '64a311df55f24059a326323c754eedfd';
-// var client_Secret = '71ed2c4226d746488ca2afd497128671';
+ var client_id = '64a311df55f24059a326323c754eedfd';
+ var client_Secret = '71ed2c4226d746488ca2afd497128671';
 
 //Damon
-var client_id = '33f50a3d11604feda7d71a1676962fd4';
-var client_Secret = 'f668a134308b44bb83e1e6f051ef6a8a';
+//var client_id = '33f50a3d11604feda7d71a1676962fd4';
+//var client_Secret = 'f668a134308b44bb83e1e6f051ef6a8a';
 
 var redirect_uri = `${serverUrl}post_authentication`;
 var client_auth_code = [];
@@ -84,8 +302,7 @@ app.get('/post_authentication', (req, res) => {
       client_refresh_token = [];
       client_access_token.push(body.access_token);
       client_refresh_token.push(body.refresh_token);
-      access_token =
-        client_access_token.length > 0 ? client_access_token[0] : constant_access_token;
+      access_token = client_access_token[0];
       console.log('access token is ');
       console.log(access_token);
       res.redirect(clientUrl + 'Home');
@@ -97,8 +314,7 @@ function refresh_access_spotify() {
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
-      refresh_token:
-        client_refresh_token.length > 0 ? client_refresh_token[0] : constant_refresh_token,
+      refresh_token: constant_refresh_token,
       grant_type: 'refresh_token',
     },
     headers: {
