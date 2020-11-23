@@ -177,15 +177,14 @@ app.post('/createPost', (req, res) => {
 
     async function makePost() {
         try {
-            await createPost(client, {username, heading: post_heading, body: post_paragraph, src: post_link, time: post_time, likes: post_likes});
-            res.json({
-                message: "Success"
-            })
+            await createPost(client, 
+              {username, heading: post_heading, body: post_paragraph, 
+                src: post_link, time: post_time, likes: post_likes});
+                return res.send(JSON.stringify({message: "Success"}))
         }
         catch(e) {
-            res.json({
-                message: "There was an error creating your post. Please retry"
-            })
+            return res.send(JSON.stringify({message: "There was an error creating your post. Please retry"}))
+            console.log(e);
         }
     }
     makePost();
@@ -311,43 +310,46 @@ app.get('/api/spotifylogin/:userName', (req, res) => {
       scope +
       '&show_dialog=true'
   );
+  router.get('/post_authentication', (req, res) => {
+    console.log("hi")
+  })
 });
 
-app.get('/post_authentication', (req, res) => {
-  code = req.query.code;
-  console.log(code);
+// app.get('/post_authentication', (req, res) => {
+//   code = req.query.code;
+//   console.log(code);
 
-  var authOptions = {
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      code: code,
-      redirect_uri: redirect_uri,
-      grant_type: 'authorization_code',
-    },
-    headers: {
-      Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
-    },
-    json: true,
-  };
+//   var authOptions = {
+//     url: 'https://accounts.spotify.com/api/token',
+//     form: {
+//       code: code,
+//       redirect_uri: redirect_uri,
+//       grant_type: 'authorization_code',
+//     },
+//     headers: {
+//       Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
+//     },
+//     json: true,
+//   };
 
-  request.post(authOptions, (error, response, body) => {
-    if (error) {
-      console.log('there has been an error with authentication');
-      console.log(error);
-    } 
-    else {
-      console.log(body);
-      access_token = body.access_token
-      console.log('access token is ');
-      console.log(access_token);
+//   request.post(authOptions, (error, response, body) => {
+//     if (error) {
+//       console.log('there has been an error with authentication');
+//       console.log(error);
+//     } 
+//     else {
+//       console.log(body);
+//       access_token = body.access_token
+//       console.log('access token is ');
+//       console.log(access_token);
 
-      let username = queueForSpotifyLogin.shift()
-      await registerUserNameSpotifyToken(client, {username, access_token : body.access_token, 
-                                                            refresh_token: body.refresh_token});
-      res.redirect(clientUrl + 'Home');
-    }
-  });
-});
+//       let username = queueForSpotifyLogin.shift()
+//       await registerUserNameSpotifyToken(client, {username, access_token : body.access_token, 
+//                                                             refresh_token: body.refresh_token});
+//       res.redirect(clientUrl + 'Home');
+//     }
+//   });
+// });
 
 function registerUserNameSpotifyToken(client, newListing) {
   async function registerToken() {
@@ -388,9 +390,9 @@ function refresh_access_spotify(refresh_tok) {
       return [body.access_token, body.refresh_token]
     }
   });
-}
+};
 
-setInterval(refresh_access_spotify(constant_refresh_token), 3600000);
+setInterval(() => {refresh_access_spotify(constant_refresh_token)}, 3600000);
 
 app.get('/api/myprofile/following', (req, res) => {
   var authOptions = {
@@ -410,7 +412,7 @@ app.get('/api/myprofile/following', (req, res) => {
 
 app.get('/api/myprofile/:userName', (req, res) => {
   userName = req.params['userName']
-  allTokens = await retrieveAllTokens(client);
+  allTokens = retrieveAllTokens(client);
   user_Tokens = allTokens.find(user => user['username'] == userName);
   
   var authOptions = {
@@ -545,11 +547,11 @@ app.get('/trackinformation', (req, res) => {
 
 app.get('/user_profile/:username', (req, res) => {
   userName = req.params['username']
-  allTokens = await retrieveAllTokens(client);
+  allTokens = retrieveAllTokens(client);
   user_Tokens = allTokens.find(user => user['username'] == userName);
 
   try {
-    tokens = await refresh_access_spotify(user_Tokens['refresh_token']) 
+    tokens = refresh_access_spotify(user_Tokens['refresh_token']) 
     var authOptions = {
       method: 'GET',
       url: 'https://api.spotify.com/v1/me',
