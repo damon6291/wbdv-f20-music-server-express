@@ -286,7 +286,6 @@ app.post('/deletePost', (req, res) => {
 
 var redirect_uri = `${serverUrl}post_authentication`;
 var queueForSpotifyLogin = []
-var client_auth_code = [];
 var constant_access_token =
   'BQCSTtFbENz0sLDQW2VJbtns02QPLIcnnG-perIleJGSa_r8M5AXOrS0O7PewyyG3K-Ad46RIpnvLCkJf_shsT89baXzqZK5BDnk0D-8pFf50M8YTXAtjH8-KzQCHaGiFDKtTS7f33nDuoxqR7-oQ5_CqeVRlcMycbrvyixXo67X0Nj9iwNxo_WXB7S2TmSnMJwHy_bc-PTiUQ7-sGBzmIGYo-oXE5JL7HTLU4HLj30cKcxLjNn_-6uk9jYVdfoSHUezOmAjGmIHozRFkjZGzSDd';
 var constant_refresh_token =
@@ -317,8 +316,6 @@ app.get('/api/spotifylogin/:userName', (req, res) => {
 app.get('/post_authentication', (req, res) => {
   code = req.query.code;
   console.log(code);
-  client_auth_code = [];
-  client_auth_code.push(code);
 
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
@@ -340,7 +337,7 @@ app.get('/post_authentication', (req, res) => {
     } 
     else {
       console.log(body);
-      access_token = client_access_token[0];
+      access_token = body.access_token
       console.log('access token is ');
       console.log(access_token);
 
@@ -382,9 +379,7 @@ function refresh_access_spotify(refresh_tok) {
   request.post(authOptions, (error, response, body) => {
     if (refresh_tok == constant_refresh_token) {
       console.log(body);
-      client_access_token = [body.access_token];
       if (body.refresh_token != undefined) {
-        client_refresh_token = [body.refresh_token];
         constant_refresh_token = body.refresh_token;
       }
       constant_access_token = body.access_token;
@@ -507,6 +502,7 @@ app.get('/api/playlists/:query', (req, res) => {
 });
 
 app.get('/trackinformation', (req, res) => {
+  //need to fix this
   //change app.get to app.post
   try {
     //12VpffJDy2d2F64t0rTrbh
