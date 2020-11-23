@@ -16,6 +16,12 @@ const client = new MongoClient(uri);
 async function createUser(client, newListing) {
     await client.connnect();
     await client.db('Users').collection("Login").insertOne(newListing);
+    await client.db('Users').collection("Followers").insertOne()
+};
+
+async function createUserFollowers(client, newListing) {
+  await client.connnect();
+  await client.db('Users').collection("Followers").insertOne(newListing)
 };
 
 async function retrieveUsers(client) {
@@ -24,10 +30,22 @@ async function retrieveUsers(client) {
     return result;
 }
 
-async function retrieveAllPosts(clients) {
+async function retrieveFollowers(client) {
+    await client.connect()
+    const result = await client.db('Users').collection("Followers").find({}).toArray();
+    return result;
+}
+
+async function retrieveAllPosts(client) {
     await client.connect();
     const result = await client.db('Users').collection("Posts").find({}).toArray();
     return result;
+}
+
+async function retrieveAllTokens(client) { 
+  await client.connect(); 
+  const result = await client.db('Users').collection("SpotifyTokens").find({}).toArray();
+  return result;
 }
 
 async function updatePost(client, id, updatedListing) {
@@ -41,6 +59,16 @@ async function updatePost(client, id, updatedListing) {
     });
 }
 
+async function updateFollowing(client, username, updatedListing) {
+    var myquery = {username: username};
+    var newvalues = { $set: updatedListing };
+    await client.connect(); 
+    await client.db('Users').collection('Followers').updateOne(myquery, newvalues, function(err, res) {
+      if (err) throw err;
+      db.close();
+    })
+}
+
 async function createPost (client, newListing) {
     await client.connnect();
     await client.db('Users').collection("Posts").insertOne(newListing);
@@ -51,12 +79,10 @@ async function deletePost(client, id) {
     await client.db('Users').collection("Posts").deleteOne({_id:new mongodb.ObjectID(id)});
 }
 
-
 app.post('/registerUser', (req, res) =>  {
     username = req.body.username
     password = req.body.password
-//    username = "hussein213213"
-//    password = "123123123"
+    display_name = req.body.displayName
 
     async function getAllUsers() {
             error = false;
@@ -74,7 +100,8 @@ app.post('/registerUser', (req, res) =>  {
             }
             else {
                 try {
-                    await createUser(client, {username, password});
+                    await createUser(client, {username, password, display_name});
+                    await createUserFollowers(client, {username, 'followers':[], 'following':[]});
                     console.log("user created successfully");
                     res.json({
                         message: "Success"
@@ -94,8 +121,6 @@ app.post('/registerUser', (req, res) =>  {
 app.post('/loginUser', (req, res) => {
         username = req.body.username
         password = req.body.password
-//        username = "hussein213213"
-//        password = "123123123"
 
         async function getAllUsers() {
                 arr = await retrieveAllSaved(client);
@@ -121,19 +146,35 @@ app.post('/loginUser', (req, res) => {
         getAllUsers();
 });
 
+app.post('/followUser', (req,res) => { 
+  userName = req.body.userName
+  userToFollow = req.body.userToFollow
+
+  async function followUser() {
+    error = false;
+    arr = await retrieveFollowers(client);
+    user = arr.find(user => user.username == userToFollow);
+    user['followers'].push(userName);
+    newListing = {followers : user['followers']}
+    updateFollowing(client, userToFollow, newListing);
+
+    userII = arr.find(user => user.username == userName);
+    userII['following'].push(userToFollow);
+    newListingII = {following: user['following']}
+    updateFollowing(client, userToFollow, newListingII);
+  }
+  followUser();
+});
+
+
 app.post('/createPost', (req, res) => {
     username = req.body.post_username
-    post_heading = req.body.post_username
+    post_heading = req.body.post_heading
     post_paragraph = req.body.post_paragraph
     post_link = req.body.post_link
     post_time = new Date()
     post_likes = 0;
 
-//    username = "hussein213213"
-//    post_heading = "yuh"
-//    post_paragraph = "this is a tessssst"
-//    post_link = "link test. You would put the link to the playlist here"
-//    post_time = new Date()
     async function makePost() {
         try {
             await createPost(client, {username, heading: post_heading, body: post_paragraph, src: post_link, time: post_time, likes: post_likes});
@@ -244,16 +285,16 @@ app.post('/deletePost', (req, res) => {
 //var client_Secret = 'f668a134308b44bb83e1e6f051ef6a8a';
 
 var redirect_uri = `${serverUrl}post_authentication`;
+var queueForSpotifyLogin = []
 var client_auth_code = [];
-var client_access_token = [];
-var client_refresh_token = [];
 var constant_access_token =
   'BQCSTtFbENz0sLDQW2VJbtns02QPLIcnnG-perIleJGSa_r8M5AXOrS0O7PewyyG3K-Ad46RIpnvLCkJf_shsT89baXzqZK5BDnk0D-8pFf50M8YTXAtjH8-KzQCHaGiFDKtTS7f33nDuoxqR7-oQ5_CqeVRlcMycbrvyixXo67X0Nj9iwNxo_WXB7S2TmSnMJwHy_bc-PTiUQ7-sGBzmIGYo-oXE5JL7HTLU4HLj30cKcxLjNn_-6uk9jYVdfoSHUezOmAjGmIHozRFkjZGzSDd';
 var constant_refresh_token =
   'AQCKvYSAjSY4q9_86018kjOuzA46cy2i8_Tz6WAO-V72pXtxr2RJcupWNxPUodU8k-QifMC6LzxOdG_hMEAwj9FrGSLCvSeWY3MqyNt7vfT4RpwJV51yo7ZCX_3J_CRLsW4';
 var access_token = constant_access_token;
 
-app.get('/api/spotifylogin', (req, res) => {
+app.get('/api/spotifylogin/:userName', (req, res) => {
+  queueForSpotifyLogin.push(req.params.userName)
   var scope =
     'ugc-image-upload%20user-read-recently-played%20' +
     'user-read-playback-position%20user-top-read%20' +
@@ -296,25 +337,40 @@ app.get('/post_authentication', (req, res) => {
     if (error) {
       console.log('there has been an error with authentication');
       console.log(error);
-    } else {
+    } 
+    else {
       console.log(body);
-      client_access_token = [];
-      client_refresh_token = [];
-      client_access_token.push(body.access_token);
-      client_refresh_token.push(body.refresh_token);
       access_token = client_access_token[0];
       console.log('access token is ');
       console.log(access_token);
+
+      let username = queueForSpotifyLogin.shift()
+      await registerUserNameSpotifyToken(client, {username, access_token : body.access_token, 
+                                                            refresh_token: body.refresh_token});
       res.redirect(clientUrl + 'Home');
     }
   });
 });
 
-function refresh_access_spotify() {
+function registerUserNameSpotifyToken(client, newListing) {
+  async function registerToken() {
+    try {
+      await client.connnect();
+      await client.db('Users').collection("SpotifyTokens").insertOne(newListing)
+    }
+    catch(e) {
+        console.log(e);
+    }
+  }
+  registerToken();
+};
+
+
+function refresh_access_spotify(refresh_tok) {
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
-      refresh_token: constant_refresh_token,
+      refresh_token: refresh_tok,
       grant_type: 'refresh_token',
     },
     headers: {
@@ -324,17 +380,22 @@ function refresh_access_spotify() {
   };
 
   request.post(authOptions, (error, response, body) => {
-    console.log(body);
-    client_access_token = [body.access_token];
-    if (body.refresh_token != undefined) {
-      client_refresh_token = [body.refresh_token];
-      constant_refresh_token = body.refresh_token;
+    if (refresh_tok == constant_refresh_token) {
+      console.log(body);
+      client_access_token = [body.access_token];
+      if (body.refresh_token != undefined) {
+        client_refresh_token = [body.refresh_token];
+        constant_refresh_token = body.refresh_token;
+      }
+      constant_access_token = body.access_token;
     }
-    constant_access_token = body.access_token;
+    else {
+      return [body.access_token, body.refresh_token]
+    }
   });
 }
 
-setInterval(refresh_access_spotify, 3600);
+setInterval(refresh_access_spotify(constant_refresh_token), 3600000);
 
 app.get('/api/myprofile/following', (req, res) => {
   var authOptions = {
@@ -352,13 +413,16 @@ app.get('/api/myprofile/following', (req, res) => {
   });
 });
 
-app.get('/api/myprofile', (req, res) => {
+app.get('/api/myprofile/:userName', (req, res) => {
+  userName = req.params['userName']
+  allTokens = await retrieveAllTokens(client);
+  user_Tokens = allTokens.find(user => user['username'] == userName);
+  
   var authOptions = {
     url: 'https://api.spotify.com/v1/me/',
-    headers: { Authorization: 'Bearer ' + access_token },
+    headers: { Authorization: 'Bearer ' + user_tokens['access_token'] },
   };
-  console.log('myprofile access token');
-  console.log(access_token);
+
   request.get(authOptions, (error, response, body) => {
     if (error) {
       console.log(error);
@@ -427,7 +491,6 @@ app.get('/api/playlist/:playlistId/details', (req, res) => {
 app.get('/api/playlists/:query', (req, res) => {
   let query = req.params['query'];
   query.replace(' ', '%20');
-  //  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
   var authOptions = {
     url: 'https://api.spotify.com/v1/search?q=' + query + '&type=playlist',
     headers: { Authorization: 'Bearer ' + access_token },
@@ -484,14 +547,18 @@ app.get('/trackinformation', (req, res) => {
   } catch (e) {}
 });
 
-app.get('/user_profile', (req, res) => {
+app.get('/user_profile/:username', (req, res) => {
+  userName = req.params['username']
+  allTokens = await retrieveAllTokens(client);
+  user_Tokens = allTokens.find(user => user['username'] == userName);
+
   try {
-    access_token = client_access_token[0];
+    tokens = await refresh_access_spotify(user_Tokens['refresh_token']) 
     var authOptions = {
       method: 'GET',
       url: 'https://api.spotify.com/v1/me',
       headers: {
-        Authorization: 'Bearer ' + access_token,
+        Authorization: 'Bearer ' + tokens['access_token'],
       },
     };
     request.get(authOptions, (error, response, body) => {
@@ -528,12 +595,6 @@ app.get('/user_profile', (req, res) => {
     console.log(e);
   }
 });
-
-app.get('user_top_tracks', (req, res) => {
-  access_token = client_access_token[0];
-});
-
-app.get('');
 
 /* GET home page. */
 app.get('/', function (req, res) {
