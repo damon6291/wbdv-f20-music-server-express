@@ -9,282 +9,289 @@ var app = express();
 app.use(cors());
 app.use(body_parser.json());
 
-const {MongoClient} = require('mongodb');
-const uri = 'mongodb+srv://Hussein1324:Hussein1324@users.xnopa.mongodb.net/Users?retryWrites=true&w=majority'
+const { MongoClient } = require('mongodb');
+const uri =
+  'mongodb+srv://Hussein1324:Hussein1324@users.xnopa.mongodb.net/Users?retryWrites=true&w=majority';
 const client = new MongoClient(uri);
 //newListing is the document to insert
 async function createUser(client, newListing) {
-    await client.connnect();
-    await client.db('Users').collection("Login").insertOne(newListing);
-    await client.db('Users').collection("Followers").insertOne()
-};
+  await client.connnect();
+  await client.db('Users').collection('Login').insertOne(newListing);
+  await client.db('Users').collection('Followers').insertOne();
+}
 
 async function createUserFollowers(client, newListing) {
   await client.connnect();
-  await client.db('Users').collection("Followers").insertOne(newListing)
-};
+  await client.db('Users').collection('Followers').insertOne(newListing);
+}
 
 async function retrieveUsers(client) {
-    await client.connect();
-    const result = await client.db('Users').collection("Login").find({}).toArray();
-    return result;
+  await client.connect();
+  const result = await client.db('Users').collection('Login').find({}).toArray();
+  return result;
 }
 
 async function retrieveFollowers(client) {
-    await client.connect()
-    const result = await client.db('Users').collection("Followers").find({}).toArray();
-    return result;
+  await client.connect();
+  const result = await client.db('Users').collection('Followers').find({}).toArray();
+  return result;
 }
 
 async function retrieveAllPosts(client) {
-    await client.connect();
-    const result = await client.db('Users').collection("Posts").find({}).toArray();
-    return result;
+  await client.connect();
+  const result = await client.db('Users').collection('Posts').find({}).toArray();
+  return result;
 }
 
-async function retrieveAllTokens(client) { 
-  await client.connect(); 
-  const result = await client.db('Users').collection("SpotifyTokens").find({}).toArray();
+async function retrieveAllTokens(client) {
+  await client.connect();
+  const result = await client.db('Users').collection('SpotifyTokens').find({}).toArray();
   return result;
 }
 
 async function updatePost(client, id, updatedListing) {
-    var myquery = { id: id };
-    var newvalues = { $set: updatedListing };
-    await client.connect();
-    await client.db('Users').collection("Posts").updateOne(myquery, newvalues, function(err, res) {
-        if (err) throw err;
-        console.log("1 document updated");
-        db.close();
+  var myquery = { id: id };
+  var newvalues = { $set: updatedListing };
+  await client.connect();
+  await client
+    .db('Users')
+    .collection('Posts')
+    .updateOne(myquery, newvalues, function (err, res) {
+      if (err) throw err;
+      console.log('1 document updated');
+      db.close();
     });
 }
 
 async function updateFollowing(client, username, updatedListing) {
-    var myquery = {username: username};
-    var newvalues = { $set: updatedListing };
-    await client.connect(); 
-    await client.db('Users').collection('Followers').updateOne(myquery, newvalues, function(err, res) {
+  var myquery = { username: username };
+  var newvalues = { $set: updatedListing };
+  await client.connect();
+  await client
+    .db('Users')
+    .collection('Followers')
+    .updateOne(myquery, newvalues, function (err, res) {
       if (err) throw err;
       db.close();
-    })
+    });
 }
 
-async function createPost (client, newListing) {
-    await client.connnect();
-    await client.db('Users').collection("Posts").insertOne(newListing);
-};
+async function createPost(client, newListing) {
+  await client.connnect();
+  await client.db('Users').collection('Posts').insertOne(newListing);
+}
 
 async function deletePost(client, id) {
-    await client.connect();
-    await client.db('Users').collection("Posts").deleteOne({_id:new mongodb.ObjectID(id)});
+  await client.connect();
+  await client
+    .db('Users')
+    .collection('Posts')
+    .deleteOne({ _id: new mongodb.ObjectID(id) });
 }
 
-app.post('/registerUser', (req, res) =>  {
-    username = req.body.username
-    password = req.body.password
-    display_name = req.body.displayName
+app.post('/api/registerUser', (req, res) => {
+  username = req.body.username;
+  password = req.body.password;
+  display_name = req.body.displayName;
 
-    async function getAllUsers() {
-            error = false;
-            arr = await retrieveUsers(client);
-            for(i = 0; i < arr.length; i ++) {
-                if (username == arr[i].username) {
-                    error = true;
-                    break;
-                }
-            }
-            if (error) {
-                res.json({
-                    message: "UserName: " + username + " already taken. Please choose a new name."
-                })
-            }
-            else {
-                try {
-                    await createUser(client, {username, password, display_name});
-                    await createUserFollowers(client, {username, 'followers':[], 'following':[]});
-                    console.log("user created successfully");
-                    res.json({
-                        message: "Success"
-                    })
-                }
-                catch(e) {
-                    console.log(e);
-                    res.json({
-                        message: "We're Sorry, there was an issue creating your account. Try again later!"
-                    })
-                }
-            }
+  async function getAllUsers() {
+    error = false;
+    arr = await retrieveUsers(client);
+    for (i = 0; i < arr.length; i++) {
+      if (username == arr[i].username) {
+        error = true;
+        break;
+      }
     }
-    getAllUsers();
+    if (error) {
+      res.json({
+        message: 'UserName: ' + username + ' already taken. Please choose a new name.',
+      });
+    } else {
+      try {
+        await createUser(client, { username, password, display_name });
+        await createUserFollowers(client, { username, followers: [], following: [] });
+        console.log('user created successfully');
+        res.json({
+          message: 'Success',
+        });
+      } catch (e) {
+        console.log(e);
+        res.json({
+          message: "We're Sorry, there was an issue creating your account. Try again later!",
+        });
+      }
+    }
+  }
+  getAllUsers();
 });
 
 app.post('/loginUser', (req, res) => {
-        username = req.body.username
-        password = req.body.password
+  username = req.body.username;
+  password = req.body.password;
 
-        async function getAllUsers() {
-                arr = await retrieveAllSaved(client);
-                for(i = 0; i < arr.length; i ++) {
-                    if (username == arr[i].username) {
-                        if(password == arr[i].password) {
-                            success = true;
-                            break;
-                        }
-                    }
-                }
-                if (!success) {
-                    res.json({
-                        message: "UserName: " + username + " not found or password is incorrect"
-                    })
-                }
-                else {
-                    res.json({
-                        message: "Success"
-                    })
-                }
+  async function getAllUsers() {
+    arr = await retrieveAllSaved(client);
+    for (i = 0; i < arr.length; i++) {
+      if (username == arr[i].username) {
+        if (password == arr[i].password) {
+          success = true;
+          break;
         }
-        getAllUsers();
+      }
+    }
+    if (!success) {
+      res.json({
+        message: 'UserName: ' + username + ' not found or password is incorrect',
+      });
+    } else {
+      res.json({
+        message: 'Success',
+      });
+    }
+  }
+  getAllUsers();
 });
 
-app.post('/followUser', (req,res) => { 
-  userName = req.body.userName
-  userToFollow = req.body.userToFollow
+app.post('/followUser', (req, res) => {
+  userName = req.body.userName;
+  userToFollow = req.body.userToFollow;
 
   async function followUser() {
     error = false;
     arr = await retrieveFollowers(client);
-    user = arr.find(user => user.username == userToFollow);
+    user = arr.find((user) => user.username == userToFollow);
     user['followers'].push(userName);
-    newListing = {followers : user['followers']}
+    newListing = { followers: user['followers'] };
     updateFollowing(client, userToFollow, newListing);
 
-    userII = arr.find(user => user.username == userName);
+    userII = arr.find((user) => user.username == userName);
     userII['following'].push(userToFollow);
-    newListingII = {following: user['following']}
+    newListingII = { following: user['following'] };
     updateFollowing(client, userToFollow, newListingII);
   }
   followUser();
 });
 
-
 app.post('/createPost', (req, res) => {
-    username = req.body.post_username
-    post_heading = req.body.post_heading
-    post_paragraph = req.body.post_paragraph
-    post_link = req.body.post_link
-    post_time = new Date()
-    post_likes = 0;
+  username = req.body.post_username;
+  post_heading = req.body.post_heading;
+  post_paragraph = req.body.post_paragraph;
+  post_link = req.body.post_link;
+  post_time = new Date();
+  post_likes = 0;
 
-    async function makePost() {
-        try {
-            await createPost(client, 
-              {username, heading: post_heading, body: post_paragraph, 
-                src: post_link, time: post_time, likes: post_likes});
-                return res.send(JSON.stringify({message: "Success"}))
-        }
-        catch(e) {
-            return res.send(JSON.stringify({message: "There was an error creating your post. Please retry"}))
-            console.log(e);
-        }
+  async function makePost() {
+    try {
+      await createPost(client, {
+        username,
+        heading: post_heading,
+        body: post_paragraph,
+        src: post_link,
+        time: post_time,
+        likes: post_likes,
+      });
+      return res.send(JSON.stringify({ message: 'Success' }));
+    } catch (e) {
+      return res.send(
+        JSON.stringify({ message: 'There was an error creating your post. Please retry' })
+      );
+      console.log(e);
     }
-    makePost();
-})
+  }
+  makePost();
+});
 
 app.post('/getAllPosts', (req, res) => {
-    async function getPosts() {
-        try {
-            arr = await retrieveAllPosts(client);
-            res.json({
-                results: arr
-            })
-        }
-        catch (e) {
-            console.log(e);
-            res.json({
-                message: "There was an error retrieving posts"
-            })
-        }
+  async function getPosts() {
+    try {
+      arr = await retrieveAllPosts(client);
+      res.json({
+        results: arr,
+      });
+    } catch (e) {
+      console.log(e);
+      res.json({
+        message: 'There was an error retrieving posts',
+      });
     }
-    getPosts();
+  }
+  getPosts();
 });
 
 app.get('/likedPost', (req, res) => {
-    post_id = req.body.post_id
-    post_likes = req.body.prev_post_likes + 1
+  post_id = req.body.post_id;
+  post_likes = req.body.prev_post_likes + 1;
 
-    async function updatedLike() {
-        try {
-            await updatePost(client, post_id, {post_likes: post_likes})
-            res.json({
-                message: "Success"
-            })
-        }
-        catch(e) {
-            res.json({
-                message: "There was an error updating the likes to this post "
-            })
-        }
+  async function updatedLike() {
+    try {
+      await updatePost(client, post_id, { post_likes: post_likes });
+      res.json({
+        message: 'Success',
+      });
+    } catch (e) {
+      res.json({
+        message: 'There was an error updating the likes to this post ',
+      });
     }
-    updatedLike();
-
-})
+  }
+  updatedLike();
+});
 
 app.post('/updatePost', (req, res) => {
-    post_id = req.body.post_id
-    updated_post = req.body.updated_post
-    async function updatePosts() {
-        try {
-            await updatePost(client, post_id, updated_post)
-            res.json({
-                message: "Success"
-            })
-        }
-        catch (e) {
-            console.log(e)
-            res.json({
-                message: "There was an error updating Post. Please try again later"
-            })
-        }
+  post_id = req.body.post_id;
+  updated_post = req.body.updated_post;
+  async function updatePosts() {
+    try {
+      await updatePost(client, post_id, updated_post);
+      res.json({
+        message: 'Success',
+      });
+    } catch (e) {
+      console.log(e);
+      res.json({
+        message: 'There was an error updating Post. Please try again later',
+      });
     }
-    updatePost();
-})
+  }
+  updatePost();
+});
 
 app.post('/deletePost', (req, res) => {
-    post_id = req.body.post_id
-    async function deletePosts() {
-        try {
-            await deletePost(client, post_id);
-            res.json({
-                message: "Success"
-            })
-        }
-        catch (e) {
-            res.json({
-                message: "Cannot Delete Post. Please try again later"
-            })
-        }
+  post_id = req.body.post_id;
+  async function deletePosts() {
+    try {
+      await deletePost(client, post_id);
+      res.json({
+        message: 'Success',
+      });
+    } catch (e) {
+      res.json({
+        message: 'Cannot Delete Post. Please try again later',
+      });
     }
-    deletePosts();
-})
+  }
+  deletePosts();
+});
 
 //For test server
- var serverUrl = 'http://localhost:8080/';
- var clientUrl = 'http://localhost:3000/';
+var serverUrl = 'http://localhost:8080/';
+var clientUrl = 'http://localhost:3000/';
 
 //For deployment
 //var serverUrl = 'https://wbdv-f20-music-server-spotify.herokuapp.com/';
 //var clientUrl = 'https://wbdv-f20-music.herokuapp.com/';
 
 //Hussein
- var client_id = '64a311df55f24059a326323c754eedfd';
- var client_Secret = '71ed2c4226d746488ca2afd497128671';
+var client_id = '64a311df55f24059a326323c754eedfd';
+var client_Secret = '71ed2c4226d746488ca2afd497128671';
 
 //Damon
 //var client_id = '33f50a3d11604feda7d71a1676962fd4';
 //var client_Secret = 'f668a134308b44bb83e1e6f051ef6a8a';
 
 var redirect_uri = `${serverUrl}post_authentication`;
-var queueForSpotifyLogin = []
+var queueForSpotifyLogin = [];
 var constant_access_token =
   'BQCSTtFbENz0sLDQW2VJbtns02QPLIcnnG-perIleJGSa_r8M5AXOrS0O7PewyyG3K-Ad46RIpnvLCkJf_shsT89baXzqZK5BDnk0D-8pFf50M8YTXAtjH8-KzQCHaGiFDKtTS7f33nDuoxqR7-oQ5_CqeVRlcMycbrvyixXo67X0Nj9iwNxo_WXB7S2TmSnMJwHy_bc-PTiUQ7-sGBzmIGYo-oXE5JL7HTLU4HLj30cKcxLjNn_-6uk9jYVdfoSHUezOmAjGmIHozRFkjZGzSDd';
 var constant_refresh_token =
@@ -292,7 +299,7 @@ var constant_refresh_token =
 var access_token = constant_access_token;
 
 app.get('/api/spotifylogin/:userName', (req, res) => {
-  queueForSpotifyLogin.push(req.params.userName)
+  queueForSpotifyLogin.push(req.params.userName);
   var scope =
     'ugc-image-upload%20user-read-recently-played%20' +
     'user-read-playback-position%20user-top-read%20' +
@@ -311,59 +318,59 @@ app.get('/api/spotifylogin/:userName', (req, res) => {
       '&show_dialog=true'
   );
   router.get('/post_authentication', (req, res) => {
-    console.log("hi")
-  })
+    console.log('hi');
+  });
 });
 
-// app.get('/post_authentication', (req, res) => {
-//   code = req.query.code;
-//   console.log(code);
+app.get('/post_authentication', (req, res) => {
+  code = req.query.code;
+  console.log(code);
 
-//   var authOptions = {
-//     url: 'https://accounts.spotify.com/api/token',
-//     form: {
-//       code: code,
-//       redirect_uri: redirect_uri,
-//       grant_type: 'authorization_code',
-//     },
-//     headers: {
-//       Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
-//     },
-//     json: true,
-//   };
+  var authOptions = {
+    url: 'https://accounts.spotify.com/api/token',
+    form: {
+      code: code,
+      redirect_uri: redirect_uri,
+      grant_type: 'authorization_code',
+    },
+    headers: {
+      Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
+    },
+    json: true,
+  };
 
-//   request.post(authOptions, (error, response, body) => {
-//     if (error) {
-//       console.log('there has been an error with authentication');
-//       console.log(error);
-//     } 
-//     else {
-//       console.log(body);
-//       access_token = body.access_token
-//       console.log('access token is ');
-//       console.log(access_token);
+  request.post(authOptions, (error, response, body) => {
+    if (error) {
+      console.log('there has been an error with authentication');
+      console.log(error);
+    } else {
+      console.log(body);
+      access_token = body.access_token;
+      console.log('access token is ');
+      console.log(access_token);
 
-//       let username = queueForSpotifyLogin.shift()
-//       await registerUserNameSpotifyToken(client, {username, access_token : body.access_token, 
-//                                                             refresh_token: body.refresh_token});
-//       res.redirect(clientUrl + 'Home');
-//     }
-//   });
-// });
+      let username = queueForSpotifyLogin.shift();
+      registerUserNameSpotifyToken(client, {
+        username,
+        access_token: body.access_token,
+        refresh_token: body.refresh_token,
+      });
+      res.redirect(clientUrl + 'Home');
+    }
+  });
+});
 
 function registerUserNameSpotifyToken(client, newListing) {
   async function registerToken() {
     try {
       await client.connnect();
-      await client.db('Users').collection("SpotifyTokens").insertOne(newListing)
-    }
-    catch(e) {
-        console.log(e);
+      await client.db('Users').collection('SpotifyTokens').insertOne(newListing);
+    } catch (e) {
+      console.log(e);
     }
   }
   registerToken();
-};
-
+}
 
 function refresh_access_spotify(refresh_tok) {
   var authOptions = {
@@ -385,14 +392,15 @@ function refresh_access_spotify(refresh_tok) {
         constant_refresh_token = body.refresh_token;
       }
       constant_access_token = body.access_token;
-    }
-    else {
-      return [body.access_token, body.refresh_token]
+    } else {
+      return [body.access_token, body.refresh_token];
     }
   });
-};
+}
 
-setInterval(() => {refresh_access_spotify(constant_refresh_token)}, 3600000);
+setInterval(() => {
+  refresh_access_spotify(constant_refresh_token);
+}, 3600000);
 
 app.get('/api/myprofile/following', (req, res) => {
   var authOptions = {
@@ -411,10 +419,10 @@ app.get('/api/myprofile/following', (req, res) => {
 });
 
 app.get('/api/myprofile/:userName', (req, res) => {
-  userName = req.params['userName']
+  userName = req.params['userName'];
   allTokens = retrieveAllTokens(client);
-  user_Tokens = allTokens.find(user => user['username'] == userName);
-  
+  user_Tokens = allTokens.find((user) => user['username'] == userName);
+
   var authOptions = {
     url: 'https://api.spotify.com/v1/me/',
     headers: { Authorization: 'Bearer ' + user_tokens['access_token'] },
@@ -546,12 +554,12 @@ app.get('/trackinformation', (req, res) => {
 });
 
 app.get('/user_profile/:username', (req, res) => {
-  userName = req.params['username']
+  userName = req.params['username'];
   allTokens = retrieveAllTokens(client);
-  user_Tokens = allTokens.find(user => user['username'] == userName);
+  user_Tokens = allTokens.find((user) => user['username'] == userName);
 
   try {
-    tokens = refresh_access_spotify(user_Tokens['refresh_token']) 
+    tokens = refresh_access_spotify(user_Tokens['refresh_token']);
     var authOptions = {
       method: 'GET',
       url: 'https://api.spotify.com/v1/me',
