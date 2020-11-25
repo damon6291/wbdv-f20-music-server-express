@@ -10,18 +10,17 @@ app.use(cors());
 app.use(body_parser.json());
 
 const { MongoClient } = require('mongodb');
-const uri =
-  'mongodb+srv://Hussein1324:Hussein1324@users.xnopa.mongodb.net/Users?retryWrites=true&w=majority';
+const uri = 'mongodb+srv://Hussein1324:Hussein1324@users.xnopa.mongodb.net/Users?retryWrites=true&w=majority';
 const client = new MongoClient(uri);
 //newListing is the document to insert
 async function createUser(client, newListing) {
-  await client.connnect();
+  await client.connect();
   await client.db('Users').collection('Login').insertOne(newListing);
   await client.db('Users').collection('Followers').insertOne();
 }
 
 async function createUserFollowers(client, newListing) {
-  await client.connnect();
+  await client.connect();
   await client.db('Users').collection('Followers').insertOne(newListing);
 }
 
@@ -77,7 +76,7 @@ async function updateFollowing(client, username, updatedListing) {
 }
 
 async function createPost(client, newListing) {
-  await client.connnect();
+  await client.connect();
   await client.db('Users').collection('Posts').insertOne(newListing);
 }
 
@@ -291,15 +290,14 @@ var client_Secret = '71ed2c4226d746488ca2afd497128671';
 //var client_Secret = 'f668a134308b44bb83e1e6f051ef6a8a';
 
 var redirect_uri = `${serverUrl}post_authentication`;
-var queueForSpotifyLogin = [];
 var constant_access_token =
-  'BQCSTtFbENz0sLDQW2VJbtns02QPLIcnnG-perIleJGSa_r8M5AXOrS0O7PewyyG3K-Ad46RIpnvLCkJf_shsT89baXzqZK5BDnk0D-8pFf50M8YTXAtjH8-KzQCHaGiFDKtTS7f33nDuoxqR7-oQ5_CqeVRlcMycbrvyixXo67X0Nj9iwNxo_WXB7S2TmSnMJwHy_bc-PTiUQ7-sGBzmIGYo-oXE5JL7HTLU4HLj30cKcxLjNn_-6uk9jYVdfoSHUezOmAjGmIHozRFkjZGzSDd';
+  ['BQCSTtFbENz0sLDQW2VJbtns02QPLIcnnG-perIleJGSa_r8M5AXOrS0O7PewyyG3K-Ad46RIpnvLCkJf_shsT89baXzqZK5BDnk0D-8pFf50M8YTXAtjH8-KzQCHaGiFDKtTS7f33nDuoxqR7-oQ5_CqeVRlcMycbrvyixXo67X0Nj9iwNxo_WXB7S2TmSnMJwHy_bc-PTiUQ7-sGBzmIGYo-oXE5JL7HTLU4HLj30cKcxLjNn_-6uk9jYVdfoSHUezOmAjGmIHozRFkjZGzSDd'];
 var constant_refresh_token =
-  'AQCKvYSAjSY4q9_86018kjOuzA46cy2i8_Tz6WAO-V72pXtxr2RJcupWNxPUodU8k-QifMC6LzxOdG_hMEAwj9FrGSLCvSeWY3MqyNt7vfT4RpwJV51yo7ZCX_3J_CRLsW4';
-var access_token = constant_access_token;
+  ['AQCKvYSAjSY4q9_86018kjOuzA46cy2i8_Tz6WAO-V72pXtxr2RJcupWNxPUodU8k-QifMC6LzxOdG_hMEAwj9FrGSLCvSeWY3MqyNt7vfT4RpwJV51yo7ZCX_3J_CRLsW4'];
+var access_token = constant_access_token[0];
 
 app.get('/api/spotifylogin/:userName', (req, res) => {
-  queueForSpotifyLogin.push(req.params.userName);
+  const username = req.params.userName;
   var scope =
     'ugc-image-upload%20user-read-recently-played%20' +
     'user-read-playback-position%20user-top-read%20' +
@@ -317,60 +315,55 @@ app.get('/api/spotifylogin/:userName', (req, res) => {
       scope +
       '&show_dialog=true'
   );
-  router.get('/post_authentication', (req, res) => {
-    console.log('hi');
-  });
-});
-
-app.get('/post_authentication', (req, res) => {
-  code = req.query.code;
-  console.log(code);
-
-  var authOptions = {
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      code: code,
-      redirect_uri: redirect_uri,
-      grant_type: 'authorization_code',
-    },
-    headers: {
-      Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
-    },
-    json: true,
-  };
-
-  request.post(authOptions, (error, response, body) => {
-    if (error) {
-      console.log('there has been an error with authentication');
-      console.log(error);
-    } else {
-      console.log(body);
-      access_token = body.access_token;
-      console.log('access token is ');
-      console.log(access_token);
-
-      let username = queueForSpotifyLogin.shift();
-      registerUserNameSpotifyToken(client, {
-        username,
-        access_token: body.access_token,
-        refresh_token: body.refresh_token,
-      });
-      res.redirect(clientUrl + 'Home');
-    }
+  app.get('/post_authentication', (req, res) => {
+    code = req.query.code;
+    console.log(code);
+  
+    var authOptions = {
+      url: 'https://accounts.spotify.com/api/token',
+      form: {
+        code: code,
+        redirect_uri: redirect_uri,
+        grant_type: 'authorization_code',
+      },
+      headers: {
+        Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
+      },
+      json: true,
+    };
+  
+    request.post(authOptions, (error, response, body) => {
+      if (error) {
+        console.log('there has been an error with authentication');
+        console.log(error);
+      } else {
+        console.log(body);
+        access_token = body.access_token;
+        console.log('access token is ');
+        console.log(access_token);
+  
+        registerUserNameSpotifyToken(client, {
+          username,
+          access_token: body.access_token,
+          refresh_token: body.refresh_token,
+        });
+        res.redirect(clientUrl + 'Home');
+      }
+    });
   });
 });
 
 function registerUserNameSpotifyToken(client, newListing) {
   async function registerToken() {
     try {
-      await client.connnect();
+      await client.connect();
       await client.db('Users').collection('SpotifyTokens').insertOne(newListing);
     } catch (e) {
       console.log(e);
     }
   }
   registerToken();
-}
+};
 
 function refresh_access_spotify(refresh_tok) {
   var authOptions = {
@@ -386,109 +379,118 @@ function refresh_access_spotify(refresh_tok) {
   };
 
   request.post(authOptions, (error, response, body) => {
-    if (refresh_tok == constant_refresh_token) {
-      console.log(body);
+    if (refresh_tok == constant_refresh_token[0]) {
+      console.log("im in the if case");
       if (body.refresh_token != undefined) {
-        constant_refresh_token = body.refresh_token;
+        constant_refresh_token[0] = body.refresh_token;
       }
-      constant_access_token = body.access_token;
+      constant_access_token[0] = body.access_token;
     } else {
-      return [body.access_token, body.refresh_token];
+      return body.access_token;
     }
   });
-}
+};
 
 setInterval(() => {
-  refresh_access_spotify(constant_refresh_token);
-}, 3600000);
+  refresh_access_spotify(constant_refresh_token[0]);
+}, 180000);
 
-app.get('/api/myprofile/following', (req, res) => {
-  var authOptions = {
-    url: 'https://api.spotify.com/v1/me/following?type=artist',
-    headers: { Authorization: 'Bearer ' + access_token },
-  };
-  request.get(authOptions, (error, response, body) => {
-    if (error) {
-      console.log(error);
-    } else {
-      res.json({
-        results: response.body,
+app.get('/api/myprofile/following/:userName', (req, res) => {
+  userName = req.params['userName'];
+  retrieveAllTokens(client).then(tokens => 
+    {
+      user_tokens = tokens.find(user => user['username'] == userName)
+
+      var authOptions = {
+        url: 'https://api.spotify.com/v1/me/following?type=artist',
+        headers: { Authorization: 'Bearer ' + user_tokens['access_token'] },
+      };
+      request.get(authOptions, (error, response, body) => {
+        if (error) {
+          console.log(error);
+        } else {
+          res.send(JSON.stringify(response.body));
+        }
       });
-    }
-  });
+    });
 });
 
 app.get('/api/myprofile/:userName', (req, res) => {
   userName = req.params['userName'];
-  allTokens = retrieveAllTokens(client);
-  user_Tokens = allTokens.find((user) => user['username'] == userName);
-
-  var authOptions = {
-    url: 'https://api.spotify.com/v1/me/',
-    headers: { Authorization: 'Bearer ' + user_tokens['access_token'] },
-  };
-
-  request.get(authOptions, (error, response, body) => {
-    if (error) {
-      console.log(error);
-    } else {
-      res.json({
-        results: response.body,
+  retrieveAllTokens(client).then(tokens => 
+    {
+      user_tokens = tokens.find(user => user['username'] == userName)
+      var authOptions = {
+        url: 'https://api.spotify.com/v1/me/',
+        headers: { Authorization: 'Bearer ' + user_tokens['access_token'] },
+      };
+    
+      request.get(authOptions, (error, response, body) => {
+        if (error) {
+          console.log(error);
+        } else {
+          res.send(JSON.stringify(response.body));
+        }
       });
-    }
+    
+    });
+});
+
+app.get('/api/profile/:profileId/:userName', (req, res) => {
+  let userName = req.params['userName'];
+  let profileId = req.params['profileId'];
+
+  retrieveAllTokens(client).then(tokens => {
+    user_tokens = tokens.find(user => user['username'] == userName)
+    var authOptions = {
+      url: 'https://api.spotify.com/v1/users/' + profileId,
+      headers: { Authorization: 'Bearer ' + user_tokens['access_token'] },
+    };
+    request.get(authOptions, (error, response, body) => {
+      if (error) {
+        console.log(error);
+      } else {
+        res.send(JSON.stringify(response.body));
+      }
+    });
   });
 });
 
-app.get('/api/profile/:profileId', (req, res) => {
+app.get('/api/profile/:profileId/playlists/:userName', (req, res) => {
   let profileId = req.params['profileId'];
-  // access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
-  var authOptions = {
-    url: 'https://api.spotify.com/v1/users/' + profileId,
-    headers: { Authorization: 'Bearer ' + access_token },
-  };
-  request.get(authOptions, (error, response, body) => {
-    if (error) {
-      console.log(error);
-    } else {
-      res.json({
-        results: response.body,
-      });
-    }
-  });
-});
+  let username = req.params['userName'];
 
-app.get('/api/profile/:profileId/playlists', (req, res) => {
-  let profileId = req.params['profileId'];
-  //  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
-  var authOptions = {
-    url: 'https://api.spotify.com/v1/users/' + profileId + '/playlists',
-    headers: { Authorization: 'Bearer ' + access_token },
-  };
-  request.get(authOptions, (error, response, body) => {
-    if (error) {
-      console.log(error);
-    } else {
-      res.json({
-        results: response.body,
-      });
-    }
-  });
+  retrieveAllTokens(client).then(tokens => {
+    user_tokens = tokens.find(user => user['username'] == userName)
+    var authOptions = {
+      url: 'https://api.spotify.com/v1/users/' + profileId + '/playlists',
+      headers: { Authorization: 'Bearer ' + user_tokens['access_token'] },
+    };
+    request.get(authOptions, (error, response, body) => {
+      if (error) {
+        console.log(error);
+      } else {
+        res.json({
+          results: response.body,
+        });
+      }
+    });
+  })
 });
 
 app.get('/api/playlist/:playlistId/details', (req, res) => {
   let playlistId = req.params['playlistId'];
-  //  access_token = client_access_token.size > 0 ? client_access_token[0] : constant_access_token;
+  refresh_access_spotify(constant_refresh_token[0]);
+
   var authOptions = {
     url: 'https://api.spotify.com/v1/playlists/' + playlistId,
-    headers: { Authorization: 'Bearer ' + access_token },
+    headers: { Authorization: 'Bearer ' + constant_access_token[0] },
   };
   request.get(authOptions, (error, response, body) => {
     if (error) {
       console.log(error);
     } else {
-      res.json({
-        results: response.body,
-      });
+      res.send(JSON.stringify(response.body));
     }
   });
 });
@@ -496,9 +498,11 @@ app.get('/api/playlist/:playlistId/details', (req, res) => {
 app.get('/api/playlists/:query', (req, res) => {
   let query = req.params['query'];
   query.replace(' ', '%20');
+  refresh_access_spotify(constant_refresh_token[0]);
+
   var authOptions = {
     url: 'https://api.spotify.com/v1/search?q=' + query + '&type=playlist',
-    headers: { Authorization: 'Bearer ' + access_token },
+    headers: { Authorization: 'Bearer ' + constant_access_token[0] },
   };
   request.get(authOptions, (error, response, body) => {
     if (error) {
@@ -555,51 +559,50 @@ app.get('/trackinformation', (req, res) => {
 
 app.get('/user_profile/:username', (req, res) => {
   userName = req.params['username'];
-  allTokens = retrieveAllTokens(client);
-  user_Tokens = allTokens.find((user) => user['username'] == userName);
-
-  try {
-    tokens = refresh_access_spotify(user_Tokens['refresh_token']);
-    var authOptions = {
-      method: 'GET',
-      url: 'https://api.spotify.com/v1/me',
-      headers: {
-        Authorization: 'Bearer ' + tokens['access_token'],
-      },
-    };
-    request.get(authOptions, (error, response, body) => {
-      general_user_info = body;
-      console.log(body);
-      var authOptions2 = {
-        url: 'https://api.spotify.com/v1/me/top/tracks',
-        headers: { Authorization: 'Bearer ' + access_token },
+  retrieveAllTokens(client).then(tokens => {
+    user_Tokens = tokens.find((user) => user['username'] == userName);
+    try {
+      access_token = user_Tokens['access_token'];
+      let result = refresh_access_spotify(user_Tokens['refresh_token'])
+      console.log(user_Tokens)
+      console.log(access_token)
+      var authOptions = {
+        method: 'GET',
+        url: 'https://api.spotify.com/v1/me',
+        headers: {
+          Authorization: 'Bearer ' + access_token,
+        },
       };
-      request.get(authOptions2, (error, response, body) => {
-        top_tracks = body;
-        var authOptions3 = {
-          url: 'https://api.spotify.com/v1/me/top/artists',
+      request.get(authOptions, (error, response, body) => {
+        general_user_info = body;
+        console.log(body);
+        var authOptions2 = {
+          url: 'https://api.spotify.com/v1/me/top/tracks',
           headers: { Authorization: 'Bearer ' + access_token },
         };
-        request.get(authOptions3, (error, response, body) => {
-          top_artists = body;
-          console.log(top_tracks);
-          console.log(top_artists);
-          res.json({
-            general_user_info,
-            top_tracks,
-            top_artists,
+        request.get(authOptions2, (error, response, body) => {
+          top_tracks = body;
+          var authOptions3 = {
+            url: 'https://api.spotify.com/v1/me/top/artists',
+            headers: { Authorization: 'Bearer ' + access_token },
+          };
+          request.get(authOptions3, (error, response, body) => {
+            top_artists = body;
+            console.log(top_tracks);
+            console.log(top_artists);
+            res.json({
+              general_user_info,
+              top_tracks,
+              top_artists,
+            });
           });
         });
       });
-      console.log(body);
-      res.json({
-        body,
-      });
-    });
-  } catch (e) {
-    console.log('there was an error retrieving user profile information');
-    console.log(e);
-  }
+    } catch (e) {
+      console.log('there was an error retrieving user profile information');
+      console.log(e);
+    }
+  })
 });
 
 /* GET home page. */
