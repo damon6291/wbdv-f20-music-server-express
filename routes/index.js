@@ -366,6 +366,7 @@ function registerUserNameSpotifyToken(client, newListing) {
 };
 
 function refresh_access_spotify(refresh_tok) {
+  const result = [];
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
@@ -385,10 +386,15 @@ function refresh_access_spotify(refresh_tok) {
         constant_refresh_token[0] = body.refresh_token;
       }
       constant_access_token[0] = body.access_token;
+      return result;
     } else {
-      return body.access_token;
+      console.log("IN ELSE CASE")
+      console.log(body.access_token)
+      result.push(body.access_token);
+      return result;
     }
   });
+
 };
 
 setInterval(() => {
@@ -563,9 +569,13 @@ app.get('/user_profile/:username', (req, res) => {
     user_Tokens = tokens.find((user) => user['username'] == userName);
     try {
       access_token = user_Tokens['access_token'];
-      let result = refresh_access_spotify(user_Tokens['refresh_token'])
-      console.log(user_Tokens)
-      console.log(access_token)
+      
+      let result = refresh_access_spotify(user_Tokens['refresh_token']);
+
+      console.log(result)
+
+
+
       var authOptions = {
         method: 'GET',
         url: 'https://api.spotify.com/v1/me',
