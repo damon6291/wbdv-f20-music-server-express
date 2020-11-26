@@ -390,35 +390,6 @@ setInterval(refresh_access_spotify_constant, 360000);
 
 refresh_access_spotify_constant();
 
-function refresh_access_spotify(refresh_tok) {
-  console.log("REFRESH_TOK: " + refresh_tok);
-  var authOptions = {
-    method: 'POST',
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      refresh_token: refresh_tok,
-      grant_type: 'refresh_token',
-    },
-    headers: {
-      Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
-    },
-    json: true,
-  };
-  console.log("im before router")
-  router.post(authOptions, (error, response, body) => {
-    console.log("IM IN HERE");
-    if(error) {
-      console.log(error);
-    }
-    else {
-      console.log("RETURNED ACCESS: " + body.access_token)
-      return body.access_token
-    }  
-  });
-};
-
-refresh_access_spotify('AQAW2jB3PT4hm-AQBKQP2oPjGawsdHpP0DH6O74cfWpR7dKYGZo6NWIXtf_4MX17H-eDr0q_LQDQCLCNfxtfpnupILEHvyQWwtRKvYP0eUt2LWCC_M3rtB-gVJCePn-1y9IWW7pC0zMAwL_AI')
-
 app.get('/api/myprofile/following/:userName', (req, res) => {
   userName = req.params['userName'];
   retrieveAllTokens(client).then(tokens => 
@@ -585,40 +556,58 @@ app.get('/user_profile/:username', (req, res) => {
   retrieveAllTokens(client).then(tokens => {
     user_Tokens = tokens.find((user) => user['username'] == userName);
     try {
-      access_token = refresh_access_spotify(user_Tokens['refresh_token']);
-      console.log("ACCESS_TOKEN")
-      console.log(access_token)
       var authOptions = {
-        method: 'GET',
-        url: 'https://api.spotify.com/v1/me',
-        headers: {
-          Authorization: 'Bearer ' + access_token,
+        url: 'https://accounts.spotify.com/api/token',
+        form: {
+          refresh_token: user_Tokens['refresh_token'],
+          grant_type: 'refresh_token',
         },
+        headers: {
+          Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
+        },
+        json: true,
       };
-      request.get(authOptions, (error, response, body) => {
-        general_user_info = body;
-        console.log(body);
-        var authOptions2 = {
-          url: 'https://api.spotify.com/v1/me/top/tracks',
-          headers: { Authorization: 'Bearer ' + access_token },
-        };
-        request.get(authOptions2, (error, response, body) => {
-          top_tracks = body;
-          var authOptions3 = {
-            url: 'https://api.spotify.com/v1/me/top/artists',
-            headers: { Authorization: 'Bearer ' + access_token },
+      console.log("im before router")
+      request.post(authOptions, (error, response, body) => {
+        console.log("IM IN HERE");
+        if(error) {
+          console.log(error);
+        }
+        else {
+          access_token = body.access_token;
+          var authOptions = {
+            method: 'GET',
+            url: 'https://api.spotify.com/v1/me',
+            headers: {
+              Authorization: 'Bearer ' + access_token,
+            },
           };
-          request.get(authOptions3, (error, response, body) => {
-            top_artists = body;
-            console.log(top_tracks);
-            console.log(top_artists);
-            res.json({
-              general_user_info,
-              top_tracks,
-              top_artists,
+          request.get(authOptions, (error, response, body) => {
+            general_user_info = body;
+            console.log(body);
+            var authOptions2 = {
+              url: 'https://api.spotify.com/v1/me/top/tracks',
+              headers: { Authorization: 'Bearer ' + access_token },
+            };
+            request.get(authOptions2, (error, response, body) => {
+              top_tracks = body;
+              var authOptions3 = {
+                url: 'https://api.spotify.com/v1/me/top/artists',
+                headers: { Authorization: 'Bearer ' + access_token },
+              };
+              request.get(authOptions3, (error, response, body) => {
+                top_artists = body;
+                console.log(top_tracks);
+                console.log(top_artists);
+                res.json({
+                  general_user_info,
+                  top_tracks,
+                  top_artists,
+                });
+              });
             });
           });
-        });
+        }  
       });
     } catch (e) {
       console.log('there was an error retrieving user profile information');
