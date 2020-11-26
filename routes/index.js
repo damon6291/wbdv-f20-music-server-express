@@ -365,12 +365,11 @@ function registerUserNameSpotifyToken(client, newListing) {
   registerToken();
 };
 
-function refresh_access_spotify(refresh_tok) {
-  const result = [];
+function refresh_access_spotify_constant() {
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
-      refresh_token: refresh_tok,
+      refresh_token: constant_refresh_token[0],
       grant_type: 'refresh_token',
     },
     headers: {
@@ -378,28 +377,43 @@ function refresh_access_spotify(refresh_tok) {
     },
     json: true,
   };
-
   request.post(authOptions, (error, response, body) => {
-    if (refresh_tok == constant_refresh_token[0]) {
-      console.log("im in the if case");
-      if (body.refresh_token != undefined) {
-        constant_refresh_token[0] = body.refresh_token;
-      }
-      constant_access_token[0] = body.access_token;
-      return result;
-    } else {
-      console.log("IN ELSE CASE")
-      console.log(body.access_token)
-      result.push(body.access_token);
-      return result;
+    console.log(body);
+    if (body.refresh_token != undefined) {
+      constant_refresh_token[0] = body.refresh_token;
     }
+    constant_access_token[0] = body.access_token;
   });
+}
 
+setInterval(refresh_access_spotify_constant, 360000);
+
+refresh_access_spotify_constant();
+
+function refresh_access_spotify(refresh_tok) {
+  var authOptions = {
+    url: 'https://accounts.spotify.com/api/token',
+    form: {
+      refresh_token: refresh_tok,
+      grant_type: 'refresh_token'
+    },
+    headers: {
+      Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64')
+    },
+    json: true
+  };
+
+  router.post(authOptions, (error, response, body) => {
+    if(error) {
+      return error;
+    }
+    else {
+      console.log(body.access_token);
+      return body.access_token;
+      
+    }  
+  });
 };
-
-setInterval(() => {
-  refresh_access_spotify(constant_refresh_token[0]);
-}, 180000);
 
 app.get('/api/myprofile/following/:userName', (req, res) => {
   userName = req.params['userName'];
@@ -415,7 +429,7 @@ app.get('/api/myprofile/following/:userName', (req, res) => {
         if (error) {
           console.log(error);
         } else {
-          res.send(JSON.stringify(response.body));
+          res.send(JSON.stringify(body));
         }
       });
     });
@@ -464,7 +478,7 @@ app.get('/api/profile/:profileId/:userName', (req, res) => {
 
 app.get('/api/profile/:profileId/playlists/:userName', (req, res) => {
   let profileId = req.params['profileId'];
-  let username = req.params['userName'];
+  let userName = req.params['userName'];
 
   retrieveAllTokens(client).then(tokens => {
     user_tokens = tokens.find(user => user['username'] == userName)
@@ -486,8 +500,7 @@ app.get('/api/profile/:profileId/playlists/:userName', (req, res) => {
 
 app.get('/api/playlist/:playlistId/details', (req, res) => {
   let playlistId = req.params['playlistId'];
-  refresh_access_spotify(constant_refresh_token[0]);
-
+  refresh_access_spotify_constant()
   var authOptions = {
     url: 'https://api.spotify.com/v1/playlists/' + playlistId,
     headers: { Authorization: 'Bearer ' + constant_access_token[0] },
@@ -504,7 +517,7 @@ app.get('/api/playlist/:playlistId/details', (req, res) => {
 app.get('/api/playlists/:query', (req, res) => {
   let query = req.params['query'];
   query.replace(' ', '%20');
-  refresh_access_spotify(constant_refresh_token[0]);
+  refresh_access_spotify_constant(constant_refresh_token[0]);
 
   var authOptions = {
     url: 'https://api.spotify.com/v1/search?q=' + query + '&type=playlist',
@@ -568,14 +581,9 @@ app.get('/user_profile/:username', (req, res) => {
   retrieveAllTokens(client).then(tokens => {
     user_Tokens = tokens.find((user) => user['username'] == userName);
     try {
-      access_token = user_Tokens['access_token'];
-      
-      let result = refresh_access_spotify(user_Tokens['refresh_token']);
-
-      console.log(result)
-
-
-
+      access_token = refresh_access_spotify(user_Tokens['refresh_token']);
+      console.log("ACCESS_TOKEN")
+      console.log(access_token)
       var authOptions = {
         method: 'GET',
         url: 'https://api.spotify.com/v1/me',
