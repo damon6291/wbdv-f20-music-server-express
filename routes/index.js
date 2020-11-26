@@ -391,29 +391,33 @@ setInterval(refresh_access_spotify_constant, 360000);
 refresh_access_spotify_constant();
 
 function refresh_access_spotify(refresh_tok) {
+  console.log("REFRESH_TOK: " + refresh_tok);
   var authOptions = {
+    method: 'POST',
     url: 'https://accounts.spotify.com/api/token',
     form: {
       refresh_token: refresh_tok,
-      grant_type: 'refresh_token'
+      grant_type: 'refresh_token',
     },
     headers: {
-      Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64')
+      Authorization: 'Basic ' + new Buffer(client_id + ':' + client_Secret).toString('base64'),
     },
-    json: true
+    json: true,
   };
-
+  console.log("im before router")
   router.post(authOptions, (error, response, body) => {
+    console.log("IM IN HERE");
     if(error) {
-      return error;
+      console.log(error);
     }
     else {
-      console.log(body.access_token);
-      return body.access_token;
-      
+      console.log("RETURNED ACCESS: " + body.access_token)
+      return body.access_token
     }  
   });
 };
+
+refresh_access_spotify('AQAW2jB3PT4hm-AQBKQP2oPjGawsdHpP0DH6O74cfWpR7dKYGZo6NWIXtf_4MX17H-eDr0q_LQDQCLCNfxtfpnupILEHvyQWwtRKvYP0eUt2LWCC_M3rtB-gVJCePn-1y9IWW7pC0zMAwL_AI')
 
 app.get('/api/myprofile/following/:userName', (req, res) => {
   userName = req.params['userName'];
@@ -627,6 +631,8 @@ app.get('/user_profile/:username', (req, res) => {
 app.get('/', function (req, res) {
   res.json({ title: 'Express' });
 });
+
+
 
 app.listen(8080);
 
